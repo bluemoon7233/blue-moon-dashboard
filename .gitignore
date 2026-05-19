@@ -1,0 +1,7 @@
+.env
+*.pyc
+__pycache__/
+token.json
+client_secret.json
+index.html
+run_local.ps1
