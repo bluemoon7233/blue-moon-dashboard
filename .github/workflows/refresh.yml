@@ -38,10 +38,15 @@ jobs:
           IG_USER_ID:            ${{ secrets.IG_USER_ID }}
         run: python fetch_data.py
 
+      - name: Stage publish directory
+        run: |
+          mkdir -p _site
+          cp index.html _site/index.html
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
+          publish_dir: ./_site
           publish_branch: gh-pages
-          include_files: index.html
+          force_orphan: true
