@@ -91,20 +91,23 @@ def fetch_ga4(creds: Credentials):
     top7  = sorted(raw.items(), key=lambda x: -x[1])[:7]
     traffic = [{"s": k, "n": v} for k, v in top7]
 
-    # Bookings / conversion events
+    # Booking funnel events
     resp2 = client.run_report(RunReportRequest(
         property=GA4_PROPERTY_ID,
         date_ranges=[DateRange(start_date=START_DATE, end_date=END_DATE)],
         dimensions=[Dimension(name="eventName")],
         metrics=[Metric(name="eventCount")],
     ))
-    bookings = 0
+    started = completed = 0
     for row in resp2.rows:
-        ev = row.dimension_values[0].value.lower()
-        if any(k in ev for k in ("purchase", "booking_complete", "checkout_success", "conversion")):
-            bookings += int(row.metric_values[0].value)
+        ev = row.dimension_values[0].value
+        count = int(row.metric_values[0].value)
+        if ev == "begin_checkout":
+            started = count
+        elif ev == "purchase":
+            completed = count
 
-    return traffic, total, bookings
+    return traffic, total, started, completed
 
 # ── Search Console ────────────────────────────────────────────────────────────
 
@@ -355,6 +358,9 @@ def generate_html(d: dict) -> str:
     milestone_sub = ("🌙 Milestone reached!" if d["ig_followers"] >= 1000
                      else f"{1000 - d['ig_followers']} from 1,000 🌙")
 
+    drop_pct = round((1 - d["bookings"] / d["bookings_started"]) * 100) if d["bookings_started"] else 0
+    drop_sub = f"{drop_pct}% drop-off ({d['bookings_started']} started)"
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -435,7 +441,8 @@ footer{{margin-top:2.5rem;padding-top:1.2rem;border-top:.5px solid var(--border)
   <div class="section-label">All channels at a glance</div>
   <div class="metrics-row">
     <div class="metric-card"><div class="lbl">Website sessions</div><div class="val">{d["total_sessions"]:,}</div><div class="sub">All sources · 30 days</div></div>
-    <div class="metric-card"><div class="lbl">Bookings completed</div><div class="val">{d["bookings"]}</div><div class="sub">Checkout successes</div></div>
+    <div class="metric-card"><div class="lbl">Bookings started</div><div class="val">{d["bookings_started"]}</div><div class="sub">begin_checkout · 30 days</div></div>
+    <div class="metric-card"><div class="lbl">Bookings completed</div><div class="val">{d["bookings"]}</div><div class="sub">{drop_sub}</div></div>
     <div class="metric-card"><div class="lbl">IG total reach</div><div class="val">{d["ig_reach"]:,}</div><div class="sub">30 days</div></div>
     <div class="metric-card"><div class="lbl">IG followers</div><div class="val">{d["ig_followers"]:,}</div><div class="sub">{milestone_sub}</div></div>
     <div class="metric-card"><div class="lbl">GBP impressions</div><div class="val">{d["gmb_impressions"]:,}</div><div class="sub">Google Search &amp; Maps</div></div>
@@ -447,7 +454,8 @@ footer{{margin-top:2.5rem;padding-top:1.2rem;border-top:.5px solid var(--border)
   <div class="section-label">Traffic</div>
   <div class="metrics-row">
     <div class="metric-card"><div class="lbl">Total sessions</div><div class="val">{d["total_sessions"]:,}</div><div class="sub">All sources</div></div>
-    <div class="metric-card"><div class="lbl">Bookings completed</div><div class="val">{d["bookings"]}</div><div class="sub">Check-out success</div></div>
+    <div class="metric-card"><div class="lbl">Bookings started</div><div class="val">{d["bookings_started"]}</div><div class="sub">begin_checkout · 30 days</div></div>
+    <div class="metric-card"><div class="lbl">Bookings completed</div><div class="val">{d["bookings"]}</div><div class="sub">{drop_sub}</div></div>
   </div>
   <div class="charts-grid">
     <div class="chart-card wide"><div class="chart-title">Sessions by source</div><div class="chart-wrap"><canvas id="trafficChart"></canvas></div><div class="legend" id="trafficLegend"></div></div>
@@ -541,7 +549,7 @@ def main():
     creds = get_google_creds()
 
     print("Fetching GA4...")
-    ga4_traffic, total_sessions, bookings = fetch_ga4(creds)
+    ga4_traffic, total_sessions, bookings_started, bookings = fetch_ga4(creds)
 
     print("Fetching Search Console...")
     seo_clicks, seo_opps = fetch_search_console(creds)
@@ -557,8 +565,9 @@ def main():
 
     data = {
         "display_date":   DISPLAY_DATE,
-        "total_sessions": total_sessions,
-        "bookings":       bookings,
+        "total_sessions":   total_sessions,
+        "bookings_started": bookings_started,
+        "bookings":         bookings,
         "ga4_traffic":    ga4_traffic,
         "seo_clicks":     seo_clicks,
         "seo_opps":       seo_opps,
