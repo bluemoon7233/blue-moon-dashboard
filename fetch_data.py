@@ -361,6 +361,19 @@ def generate_html(d: dict) -> str:
     drop_pct = round((1 - d["bookings"] / d["bookings_started"]) * 100) if d["bookings_started"] else 0
     drop_sub = f"{drop_pct}% drop-off ({d['bookings_started']} started)"
 
+    telling_us = d.get("telling_us_html", "")
+    try_next   = d.get("try_next_html",   "")
+    if telling_us or try_next:
+        insights_blocks = f"""
+  <div class="section-label">What this is telling us 🌙</div>
+  <div class="insight-block">{telling_us or '<p class="muted">No analysis available this run.</p>'}</div>
+
+  <div class="section-label">Try this next week 🌙</div>
+  <div class="insight-block">{try_next or '<p class="muted">No suggestions available this run.</p>'}</div>
+"""
+    else:
+        insights_blocks = ""
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -384,6 +397,14 @@ header{{display:flex;align-items:flex-end;justify-content:space-between;margin-b
 .panel{{display:none;}}.panel.active{{display:block;}}
 .section-label{{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;margin-top:1.75rem;}}
 .section-label:first-child{{margin-top:0;}}
+.insight-block{{background:var(--card);border:.5px solid var(--border);border-left:2px solid var(--moon);border-radius:10px;padding:1.1rem 1.4rem;font-size:13px;line-height:1.7;color:var(--text);}}
+.insight-block ul{{list-style:none;padding:0;margin:0;}}
+.insight-block li{{padding:.45rem 0;border-bottom:.5px solid rgba(200,184,162,0.06);}}
+.insight-block li:last-child{{border-bottom:none;}}
+.insight-block li::before{{content:"🌙";margin-right:.5rem;opacity:.6;}}
+.insight-block strong{{color:var(--moon);font-weight:500;}}
+.insight-block p{{margin:.4rem 0;color:rgba(237,232,226,.85);}}
+.insight-block .muted{{color:var(--muted);font-style:italic;}}
 .metrics-row{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}}
 .metric-card{{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:1rem 1.1rem;}}
 .lbl{{font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;}}
@@ -448,6 +469,8 @@ footer{{margin-top:2.5rem;padding-top:1.2rem;border-top:.5px solid var(--border)
     <div class="metric-card"><div class="lbl">GBP impressions</div><div class="val">{d["gmb_impressions"]:,}</div><div class="sub">Google Search &amp; Maps</div></div>
     <div class="metric-card"><div class="lbl">GBP direction requests</div><div class="val">{d["gmb_directions"]}</div><div class="sub">People navigating to you</div></div>
   </div>
+
+  {insights_blocks}
 </div>
 
 <div class="panel" id="panel-website">
@@ -544,6 +567,172 @@ document.getElementById('oppBody').innerHTML=SEO_O.map(r=>{{const cls=r.pos<=7?'
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+# ── AI-generated insights ─────────────────────────────────────────────────────
+
+INSIGHTS_SYSTEM = """You are a marketing analyst for Blue Moon Wellness Spa, a small \
+wellness spa in Camden NSW run by its owner, Elizabeth.
+
+Your job is to look at this week's numbers and tell her what's actually \
+happening — calmly, honestly, in her own voice. No marketing jargon. No hype. \
+No generic advice.
+
+Brand voice to match:
+- Calm and observational, like a friend who notices things
+- Plain language. Avoid "engagement", "leverage", "drive", "optimize", "metrics"
+- Honest about what isn't working — never inflates small numbers
+- Specific beats vague every time (cite the actual number; name the actual post)
+- Acknowledges that real life shapes these results (illness, school holidays, mood, energy)
+
+You receive the last 30 days of data from Google Analytics, Instagram, Facebook, \
+and Google Search Console. Return TWO sections as JSON:
+
+1. "telling_us" — 3 to 5 short observations, mixing what's working with what \
+   isn't. Markdown bullet list. Each bullet starts with a bolded short phrase \
+   followed by one or two sentences. Specific numbers always.
+
+2. "try_next_week" — 2 to 4 concrete, low-effort actions she could try \
+   THIS WEEK. Markdown bullet list. Each bullet is an action, not a goal. \
+   Ground every suggestion in a specific number from the data.
+
+Keep it short. She reads this on her phone between clients."""
+
+
+def build_insights_summary(d: dict) -> str:
+    """Compact, structured summary of the dashboard data for Claude."""
+    drop_pct = (round((1 - d["bookings"] / d["bookings_started"]) * 100)
+                if d["bookings_started"] else 0)
+
+    # Top 5 search terms by clicks
+    top_search = "\n".join(
+        f"  - \"{r['q']}\" — {r['cl']} clicks, position {r['pos']:.1f}"
+        for r in d["seo_clicks"][:5]
+    )
+
+    # Top 3 IG posts by total engagement
+    ig_top = sorted(d["ig_posts"],
+                    key=lambda p: -(p.get("likes", 0) + p.get("comments", 0) * 2))[:3]
+    ig_lines = "\n".join(
+        f"  - {p['date']} {p['type']}: {p['likes']} likes, {p['comments']} comments — "
+        f"\"{p['caption'][:120]}...\""
+        for p in ig_top
+    )
+
+    # Top 3 FB posts by impressions
+    fb_top = sorted(d["fb_posts"], key=lambda p: -p.get("imp", 0))[:3]
+    fb_lines = "\n".join(
+        f"  - {p['date']} {p['type']}: {p['imp']:,} impressions, {p['react']} reactions — "
+        f"\"{(p.get('caption') or '')[:120]}...\""
+        for p in fb_top
+    )
+
+    return f"""WEBSITE (last 30 days)
+- Total sessions: {d['total_sessions']:,}
+- Bookings started: {d['bookings_started']}
+- Bookings completed: {d['bookings']} ({drop_pct}% drop-off from started)
+
+INSTAGRAM (last 30 days)
+- Followers: {d['ig_followers']} ({'milestone hit' if d['ig_followers'] >= 1000 else f"{1000 - d['ig_followers']} from 1,000"})
+- Total reach: {d['ig_reach']:,}
+- Total likes: {d['ig_likes']}
+- Best day: {d['ig_best_day']}
+Top posts by engagement:
+{ig_lines}
+
+FACEBOOK (last 30 days)
+- Total impressions across posts: {d['fb_impressions']:,}
+Top posts:
+{fb_lines}
+
+GOOGLE SEARCH (last 30 days)
+Top search terms bringing clicks:
+{top_search}
+"""
+
+
+def generate_insights(d: dict) -> tuple[str, str]:
+    """Returns (telling_us_markdown, try_next_week_markdown).
+    Falls back to empty strings if API key missing or call fails — never raises."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        print("INFO: ANTHROPIC_API_KEY not set — skipping insights.")
+        return ("", "")
+
+    try:
+        from anthropic import Anthropic
+        client = Anthropic(api_key=api_key)
+
+        response = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=1500,
+            system=INSIGHTS_SYSTEM,
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        f"Here's the last 30 days of data:\n\n{build_insights_summary(d)}\n\n"
+                        "Return ONLY valid JSON in this exact shape — no preamble, "
+                        "no markdown fences, no commentary:\n\n"
+                        '{"telling_us": "<markdown bullets>", "try_next_week": "<markdown bullets>"}'
+                    ),
+                },
+                # Assistant prefill nudges the model to emit JSON immediately
+                {"role": "assistant", "content": "{"},
+            ],
+        )
+
+        text = next(b.text for b in response.content if b.type == "text")
+        # Prepend the prefilled "{" that the API strips from the response
+        if not text.lstrip().startswith("{"):
+            text = "{" + text
+        # Strip any trailing prose after the JSON
+        end = text.rfind("}")
+        if end > 0:
+            text = text[: end + 1]
+        parsed = json.loads(text)
+        return parsed["telling_us"], parsed["try_next_week"]
+
+    except Exception as e:
+        print(f"WARN: insights generation failed ({type(e).__name__}: {e}) — "
+              "dashboard will render without AI insights.")
+        return ("", "")
+
+
+def md_to_html(md: str) -> str:
+    """Tiny markdown subset: bullets (- ), **bold**, newlines. Safe enough for our use."""
+    if not md.strip():
+        return ""
+    import re
+    lines = md.strip().split("\n")
+    html_parts = []
+    in_list = False
+    for line in lines:
+        line = line.rstrip()
+        if line.startswith("- ") or line.startswith("* "):
+            if not in_list:
+                html_parts.append("<ul>")
+                in_list = True
+            content = line[2:]
+            content = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", content)
+            content = re.sub(r"`(.+?)`", r"<code>\1</code>", content)
+            html_parts.append(f"<li>{content}</li>")
+        elif not line.strip():
+            if in_list:
+                html_parts.append("</ul>")
+                in_list = False
+        else:
+            if in_list:
+                html_parts.append("</ul>")
+                in_list = False
+            content = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", line)
+            html_parts.append(f"<p>{content}</p>")
+    if in_list:
+        html_parts.append("</ul>")
+    return "\n".join(html_parts)
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+
+
 def main():
     print("Authenticating with Google...")
     creds = get_google_creds()
@@ -586,6 +775,11 @@ def main():
         "ig_likes":       ig_likes,
         "ig_best_day":    ig_best,
     }
+
+    print("Generating insights...")
+    telling_us_md, try_next_md = generate_insights(data)
+    data["telling_us_html"]    = md_to_html(telling_us_md)
+    data["try_next_html"]      = md_to_html(try_next_md)
 
     print("Generating HTML...")
     html = generate_html(data)
