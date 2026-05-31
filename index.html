@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue Moon Wellness Spa — Marketing Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--moon:#C8B8A2;--deep:#1A1714;--card:#272320;--border:rgba(200,184,162,0.13);--text:#EDE8E2;--muted:rgba(237,232,226,0.45);--green:#7FAF8A;--amber:#C4924A;--rose:#C47A7A;--blue:#7A9DC4;--purple:#9B8FC4;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--deep);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;padding:2rem;}
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:.5px solid var(--border);}
+.brand h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:1.9rem;letter-spacing:.04em;color:var(--moon);}
+.brand p{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.08em;text-transform:uppercase;}
+.updated{font-size:11px;color:var(--muted);text-align:right;line-height:1.6;}
+.updated strong{color:var(--moon);display:block;font-size:13px;font-weight:500;}
+.tabs{display:flex;gap:4px;margin-bottom:1.5rem;flex-wrap:wrap;}
+.tab{background:none;border:.5px solid var(--border);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;padding:6px 14px;border-radius:20px;cursor:pointer;transition:all .2s;}
+.tab.active{background:var(--moon);border-color:var(--moon);color:var(--deep);font-weight:500;}
+.panel{display:none;}.panel.active{display:block;}
+.section-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;margin-top:1.75rem;}
+.section-label:first-child{margin-top:0;}
+.insight-block{background:var(--card);border:.5px solid var(--border);border-left:2px solid var(--moon);border-radius:10px;padding:1.1rem 1.4rem;font-size:13px;line-height:1.7;color:var(--text);}
+.insight-block ul{list-style:none;padding:0;margin:0;}
+.insight-block li{padding:.45rem 0;border-bottom:.5px solid rgba(200,184,162,0.06);}
+.insight-block li:last-child{border-bottom:none;}
+.insight-block li::before{content:"🌙";margin-right:.5rem;opacity:.6;}
+.insight-block strong{color:var(--moon);font-weight:500;}
+.insight-block p{margin:.4rem 0;color:rgba(237,232,226,.85);}
+.insight-block .muted{color:var(--muted);font-style:italic;}
+.metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+.metric-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:1rem 1.1rem;}
+.lbl{font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;}
+.val{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:var(--moon);line-height:1;}
+.sub{font-size:10px;color:var(--muted);margin-top:5px;}
+.delta{font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:500;vertical-align:middle;}
+.up{background:rgba(127,175,138,0.15);color:var(--green);}
+.dn{background:rgba(196,122,122,0.15);color:var(--rose);}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:.75rem;}
+@media(max-width:680px){.charts-grid{grid-template-columns:1fr;}}
+.chart-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:1.1rem;}
+.chart-card.wide{grid-column:1/-1;}
+.chart-title{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.9rem;}
+.chart-wrap{position:relative;width:100%;height:190px;}
+.chart-wrap.tall{height:230px;}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11px;color:var(--muted);}
+.legend span{display:flex;align-items:center;gap:5px;}
+.swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+.seo-wrap{background:var(--card);border:.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:.75rem;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead th{text-align:left;color:var(--muted);font-weight:400;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;border-bottom:.5px solid var(--border);}
+tbody td{padding:8px 12px;border-bottom:.5px solid rgba(200,184,162,0.05);}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(200,184,162,0.03);}
+.tag{display:inline-block;font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;}
+.tag-green{background:rgba(127,175,138,0.15);color:var(--green);border:.5px solid rgba(127,175,138,0.3);}
+.tag-amber{background:rgba(196,146,74,0.15);color:var(--amber);border:.5px solid rgba(196,146,74,0.3);}
+.tag-rose{background:rgba(196,122,122,0.15);color:var(--rose);border:.5px solid rgba(196,122,122,0.3);}
+.tag-blue{background:rgba(122,157,196,0.15);color:var(--blue);border:.5px solid rgba(122,157,196,0.3);}
+.posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:.75rem;}
+.post-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:.9rem 1.1rem;display:flex;flex-direction:column;gap:6px;}
+.post-meta{display:flex;align-items:center;justify-content:space-between;}
+.post-caption{font-size:11px;color:var(--muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.post-stats{display:flex;gap:12px;font-size:11px;color:var(--muted);}
+.post-stats strong{color:var(--text);}
+.post-card a{font-size:10px;color:var(--moon);text-decoration:none;}
+footer{margin-top:2.5rem;padding-top:1.2rem;border-top:.5px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--muted);}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Blue Moon Wellness Spa</h1><p>Marketing performance dashboard · Camden NSW</p></div>
+  <div class="updated"><strong>Last 30 days</strong>Refreshed May 31</div>
+</header>
+<div class="tabs">
+  <button class="tab active" onclick="showTab('overview',this)">Overview</button>
+  <button class="tab" onclick="showTab('website',this)">Website</button>
+  <button class="tab" onclick="showTab('instagram',this)">Instagram</button>
+  <button class="tab" onclick="showTab('facebook',this)">Facebook</button>
+  <button class="tab" onclick="showTab('google',this)">Google</button>
+  <button class="tab" onclick="showTab('seo',this)">Search rankings</button>
+</div>
+
+<div class="panel active" id="panel-overview">
+  <div class="section-label">All channels at a glance</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Website sessions</div><div class="val">407</div><div class="sub">All sources · 30 days</div></div>
+    <div class="metric-card"><div class="lbl">Bookings started</div><div class="val">147</div><div class="sub">begin_checkout · 30 days</div></div>
+    <div class="metric-card"><div class="lbl">Bookings completed</div><div class="val">44</div><div class="sub">70% drop-off (147 started)</div></div>
+    <div class="metric-card"><div class="lbl">IG total reach</div><div class="val">9,777</div><div class="sub">30 days</div></div>
+    <div class="metric-card"><div class="lbl">IG followers</div><div class="val">993</div><div class="sub">7 from 1,000 🌙</div></div>
+    <div class="metric-card"><div class="lbl">GBP impressions</div><div class="val">0</div><div class="sub">Google Search &amp; Maps</div></div>
+    <div class="metric-card"><div class="lbl">GBP direction requests</div><div class="val">0</div><div class="sub">People navigating to you</div></div>
+  </div>
+
+  
+  <div class="section-label">What this is telling us 🌙</div>
+  <div class="insight-block"><ul>
+<li><strong>147 people started booking, but only 44 finished</strong> — that 70% drop-off is the biggest leak right now. Something in the booking process is losing three out of every four people who were ready to book.</li>
+</ul>
+<ul>
+<li><strong>The May 30 post about gifting 40 treatments quietly did the best work</strong> — 12 likes and 6 comments on Instagram, 26 reactions on Facebook. People respond when you talk about what you actually do, not what you sell.</li>
+</ul>
+<ul>
+<li><strong>Google is doing its job</strong> — 73 people searched for you by name and clicked through, sitting at position 1.9. Another 44 clicks came from people searching things like "day spa camden" and "pregnancy massage camden." They're finding you.</li>
+</ul>
+<ul>
+<li><strong>Instagram reach looks okay at 9,777, but 96 total likes across 30 days is quiet</strong> — that's about 3 likes per day across everything you posted. The audience is there, but most of them are scrolling past.</li>
+</ul></div>
+
+  <div class="section-label">Try this next week 🌙</div>
+  <div class="insight-block"><ul>
+<li><strong>Walk through your own booking process on your phone right now</strong> — all the way from clicking "book" to confirming. With 147 people starting and only 44 finishing, something is breaking. Is it too many steps? Does it time out? Is payment failing?</li>
+</ul>
+<ul>
+<li><strong>Post one more story like the May 30 one about the 40 gifted treatments</strong> — that specific, grounded honesty got 6 comments (your best) and 26 Facebook reactions. Try another one this week about something you actually did, not something you offer.</li>
+</ul>
+<ul>
+<li><strong>Check if "pregnancy massage camden" has a clear landing page</strong> — 10 people searched that exact phrase and clicked through at position 1.8. If they land on a general page instead of pregnancy-specific info, you might be losing bookings there too.</li>
+</ul></div>
+
+</div>
+
+<div class="panel" id="panel-website">
+  <div class="section-label">Traffic</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Total sessions</div><div class="val">407</div><div class="sub">All sources</div></div>
+    <div class="metric-card"><div class="lbl">Bookings started</div><div class="val">147</div><div class="sub">begin_checkout · 30 days</div></div>
+    <div class="metric-card"><div class="lbl">Bookings completed</div><div class="val">44</div><div class="sub">70% drop-off (147 started)</div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card wide"><div class="chart-title">Sessions by source</div><div class="chart-wrap"><canvas id="trafficChart"></canvas></div><div class="legend" id="trafficLegend"></div></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-instagram">
+  <div class="section-label">Profile</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Followers</div><div class="val">993</div><div class="sub">7 from 1,000 🌙</div></div>
+    <div class="metric-card"><div class="lbl">Total reach</div><div class="val">9,777</div><div class="sub">30 days</div></div>
+    <div class="metric-card"><div class="lbl">Total likes</div><div class="val">96</div></div>
+    <div class="metric-card"><div class="lbl">Best day</div><div class="val" style="font-size:1.1rem;padding-top:5px">May 9</div><div class="sub">932 reach</div></div>
+  </div>
+  <div class="charts-grid"><div class="chart-card wide"><div class="chart-title">Daily reach</div><div class="chart-wrap"><canvas id="igReachChart"></canvas></div></div></div>
+  <div class="section-label">Top posts by engagement</div>
+  <div class="posts-grid" id="igPostsGrid"></div>
+</div>
+
+<div class="panel" id="panel-facebook">
+  <div class="section-label">Page performance</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Total impressions</div><div class="val">17,658</div><div class="sub">30 days</div></div>
+    <div class="metric-card"><div class="lbl">Total reactions</div><div class="val" id="fb-react"></div></div>
+    <div class="metric-card"><div class="lbl">Total shares</div><div class="val" id="fb-shares"></div></div>
+    <div class="metric-card"><div class="lbl">Top post</div><div class="val" style="font-size:1rem;padding-top:5px">New opening hours! 
+
+D…</div><div class="sub">1,569 impressions · May 10</div></div>
+  </div>
+  <div class="charts-grid"><div class="chart-card wide"><div class="chart-title">Daily organic impressions</div><div class="chart-wrap tall"><canvas id="fbChart"></canvas></div></div></div>
+  <div class="section-label">Top posts by impressions</div>
+  <div class="posts-grid" id="fbPostsGrid"></div>
+</div>
+
+<div class="panel" id="panel-google">
+  <div class="section-label">Google My Business</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Total impressions</div><div class="val">0</div><div class="sub">Search &amp; Maps</div></div>
+    <div class="metric-card"><div class="lbl">Website clicks</div><div class="val">0</div></div>
+    <div class="metric-card"><div class="lbl">Direction requests</div><div class="val">0</div></div>
+    <div class="metric-card"><div class="lbl">Best day</div><div class="val" style="font-size:1.1rem;padding-top:5px">—</div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">GBP impressions — daily</div><div class="chart-wrap"><canvas id="gmbChart"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Website clicks &amp; directions</div><div class="chart-wrap"><canvas id="gmbActionsChart"></canvas></div></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-seo">
+  <div class="section-label">Search rankings — terms with clicks</div>
+  <div class="seo-wrap"><table><thead><tr><th>Search term</th><th style="text-align:right">Impr.</th><th style="text-align:right">Clicks</th><th style="text-align:right">Position</th><th>Status</th></tr></thead><tbody id="seoBody"></tbody></table></div>
+  <div class="section-label">Opportunity terms — 0 clicks</div>
+  <div class="seo-wrap"><table><thead><tr><th>Search term</th><th style="text-align:right">Impr.</th><th style="text-align:right">Position</th><th>Action</th></tr></thead><tbody id="oppBody"></tbody></table></div>
+</div>
+
+<footer><span>Blue Moon Wellness Spa · Camden NSW</span><span>Refreshed May 31</span></footer>
+
+<script>
+function showTab(id,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+id).classList.add('active');el.classList.add('active');setTimeout(()=>window.dispatchEvent(new Event('resize')),50);}
+const C={moon:'#C8B8A2',green:'#7FAF8A',amber:'#C4924A',rose:'#C47A7A',blue:'#7A9DC4',grid:'rgba(200,184,162,0.07)',txt:'rgba(237,232,226,0.38)'};
+const bs={x:{ticks:{color:C.txt,font:{size:10},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:C.txt,font:{size:10}},grid:{color:C.grid}}};
+const GA4=[{"s": "bluemoonwellnessspa.com.au / referral", "n": 205}, {"s": "(direct) / (none)", "n": 125}, {"s": "fb_book_now / (not set)", "n": 53}, {"s": "fb_book_now / referral", "n": 20}, {"s": "google / organic", "n": 3}, {"s": "(not set) / (not set)", "n": 1}];
+const IG=[{"d": "May 1", "r": 0}, {"d": "May 2", "r": 270}, {"d": "May 3", "r": 306}, {"d": "May 4", "r": 384}, {"d": "May 5", "r": 636}, {"d": "May 6", "r": 277}, {"d": "May 7", "r": 310}, {"d": "May 8", "r": 338}, {"d": "May 9", "r": 932}, {"d": "May 10", "r": 368}, {"d": "May 11", "r": 278}, {"d": "May 12", "r": 279}, {"d": "May 13", "r": 201}, {"d": "May 14", "r": 245}, {"d": "May 15", "r": 307}, {"d": "May 16", "r": 296}, {"d": "May 17", "r": 430}, {"d": "May 18", "r": 335}, {"d": "May 19", "r": 250}, {"d": "May 20", "r": 248}, {"d": "May 21", "r": 303}, {"d": "May 22", "r": 328}, {"d": "May 23", "r": 393}, {"d": "May 24", "r": 260}, {"d": "May 25", "r": 209}, {"d": "May 26", "r": 193}, {"d": "May 27", "r": 333}, {"d": "May 28", "r": 159}, {"d": "May 29", "r": 397}, {"d": "May 30", "r": 512}, {"d": "May 31", "r": 0}];
+const IG_POSTS=[{"date": "May 30", "type": "REEL", "likes": 12, "comments": 6, "caption": "Honest thought 77 of 100.\n\nI have gifted over 40 treatments.\n\nQuietly.\nThrough a community initiative I run out of this room.\nNo camera.\nNo post.\nNo record of it anywhere public.\n\nNot long ago, my husband went to get his", "url": "https://www.instagram.com/reel/DY9MzuwMgL4/"}, {"date": "May 24", "type": "REEL", "likes": 7, "comments": 2, "caption": "I don't take before and after photos.\n\nNot for legal reasons.\nNot because I'm not proud of what happens in this room.\n\nBecause the before and after framework was built on the premise that something was wrong at the start", "url": "https://www.instagram.com/reel/DYt9MSmMyJI/"}, {"date": "May 21", "type": "REEL", "likes": 7, "comments": 2, "caption": "Day 68 of 100 honest thoughts. \n\nDo I sell skin care yes. When and only when you ask", "url": "https://www.instagram.com/reel/DYmTuEasbrO/"}, {"date": "May 31", "type": "REEL", "likes": 5, "comments": 2, "caption": "Honest thought 78 of 100.\n\nYou have saved this post.\nOr one like it.\n\nYou have read about the treatment,\nwatched the reel,\nthought yes, that,\nand then put your phone down\nand kept going.\n\nI see you doing it.\nAnd I am not", "url": "https://www.instagram.com/reel/DY_Zy1Gzvhm/"}, {"date": "May 27", "type": "REEL", "likes": 5, "comments": 2, "caption": "Don't get me wrong I'm all for women doing what makes them happy!\n\nBut how have we convinced ourselves that any line or wrinkle is a problem we need to fix.\n\nWe love rolls and wrinkles in babies and children, yet tell ou", "url": "https://www.instagram.com/reel/DY1oClJMV0b/"}, {"date": "May 26", "type": "REEL", "likes": 8, "comments": 0, "caption": "If you are trying to love yourself,\nyou already do.\nThe trying is the love.\nIt doesn't arrive when you finally get it right.\nIt doesn't wait until you've earned it\nor worked through enough of it\nor stopped doing the thin", "url": "https://www.instagram.com/reel/DYzLWuyznxz/"}];
+const FB_POSTS=[{"date": "May 10", "type": "video", "imp": 1569, "react": 15, "shares": 0, "caption": "New opening hours! \n\nDue to a current shift in booking patterns Blue Moon Wellness Spa will now be CLOSED Wednesdays.\n\nI will be extending my days on a Thursday and working until 9pm.\n\nNew opening hours as follows\n\nMon 9", "url": "https://www.facebook.com/reel/1300673841655432/"}, {"date": "May 30", "type": "video", "imp": 1197, "react": 26, "shares": 0, "caption": "Honest thought 77 of 100.\n\nI have gifted over 40 treatments.\n\nQuietly.\nThrough a community initiative I run out of this room.\nNo camera.\nNo post.\nNo record of it anywhere public.\n\nNot long ago, my husband went to get his", "url": "https://www.facebook.com/reel/1000120932529500/"}, {"date": "May 24", "type": "photo", "imp": 1096, "react": 14, "shares": 0, "caption": "I made a decision this week that felt uncomfortable and right at the same time.\n\nI am deliberately private about what it was.\nBecause the specific decision is not really the point.\n\nWhat I keep thinking about is the feel", "url": "https://www.facebook.com/1572612904869170/posts/1577834397680354"}, {"date": "May 8", "type": "video", "imp": 816, "react": 6, "shares": 0, "caption": "Oh she has acne, I bet she can't do her job!\n\nIs honestly never a thought that has crossed my mind.\n\nAnd I truly don't believe it's crossed the mind of many.\n\nMaybe it's just that we carry ourselves differently because w", "url": "https://www.facebook.com/reel/1096475340215452/"}, {"date": "May 21", "type": "video", "imp": 754, "react": 6, "shares": 0, "caption": "Day 68 of 100 honest thoughts. \n\nDo I sell skin care yes. When and only when you ask", "url": "https://www.facebook.com/reel/26799879459634521/"}, {"date": "May 18", "type": "photo", "imp": 723, "react": 7, "shares": 1, "caption": "I want to be transparent about something.\n\nMost treatment rooms are not built for the person who walks through the door.\n\nThey are built for the skin.\nThe person carrying that skin is secondary.\nAn inconvenience when the", "url": "https://www.facebook.com/1572612904869170/posts/1572107294919731"}, {"date": "May 17", "type": "video", "imp": 693, "react": 6, "shares": 0, "caption": "Two clients tomorrow.\nI thought about not saying that.\nBut this whole challenge has been about saying the thing.\nSo.\nThe room is here. I'm here. If you've been sitting on it,\nThere is room this week.\nLink in bio to book.", "url": "https://www.facebook.com/reel/1851832935508921/"}];
+const FB_DAILY=[{"d": "May 1", "v": 0}, {"d": "May 2", "v": 112}, {"d": "May 3", "v": 352}, {"d": "May 4", "v": 430}, {"d": "May 5", "v": 475}, {"d": "May 6", "v": 226}, {"d": "May 7", "v": 134}, {"d": "May 8", "v": 816}, {"d": "May 9", "v": 496}, {"d": "May 10", "v": 1569}, {"d": "May 11", "v": 255}, {"d": "May 12", "v": 243}, {"d": "May 13", "v": 1042}, {"d": "May 14", "v": 236}, {"d": "May 15", "v": 597}, {"d": "May 16", "v": 306}, {"d": "May 17", "v": 693}, {"d": "May 18", "v": 1711}, {"d": "May 19", "v": 522}, {"d": "May 20", "v": 206}, {"d": "May 21", "v": 1107}, {"d": "May 22", "v": 512}, {"d": "May 23", "v": 826}, {"d": "May 24", "v": 1366}, {"d": "May 25", "v": 623}, {"d": "May 26", "v": 462}, {"d": "May 27", "v": 293}, {"d": "May 28", "v": 280}, {"d": "May 29", "v": 192}, {"d": "May 30", "v": 1197}, {"d": "May 31", "v": 379}];
+const GMB=[{"d": "May 1", "i": 0, "wc": 0, "dr": 0}, {"d": "May 2", "i": 0, "wc": 0, "dr": 0}, {"d": "May 3", "i": 0, "wc": 0, "dr": 0}, {"d": "May 4", "i": 0, "wc": 0, "dr": 0}, {"d": "May 5", "i": 0, "wc": 0, "dr": 0}, {"d": "May 6", "i": 0, "wc": 0, "dr": 0}, {"d": "May 7", "i": 0, "wc": 0, "dr": 0}, {"d": "May 8", "i": 0, "wc": 0, "dr": 0}, {"d": "May 9", "i": 0, "wc": 0, "dr": 0}, {"d": "May 10", "i": 0, "wc": 0, "dr": 0}, {"d": "May 11", "i": 0, "wc": 0, "dr": 0}, {"d": "May 12", "i": 0, "wc": 0, "dr": 0}, {"d": "May 13", "i": 0, "wc": 0, "dr": 0}, {"d": "May 14", "i": 0, "wc": 0, "dr": 0}, {"d": "May 15", "i": 0, "wc": 0, "dr": 0}, {"d": "May 16", "i": 0, "wc": 0, "dr": 0}, {"d": "May 17", "i": 0, "wc": 0, "dr": 0}, {"d": "May 18", "i": 0, "wc": 0, "dr": 0}, {"d": "May 19", "i": 0, "wc": 0, "dr": 0}, {"d": "May 20", "i": 0, "wc": 0, "dr": 0}, {"d": "May 21", "i": 0, "wc": 0, "dr": 0}, {"d": "May 22", "i": 0, "wc": 0, "dr": 0}, {"d": "May 23", "i": 0, "wc": 0, "dr": 0}, {"d": "May 24", "i": 0, "wc": 0, "dr": 0}, {"d": "May 25", "i": 0, "wc": 0, "dr": 0}, {"d": "May 26", "i": 0, "wc": 0, "dr": 0}, {"d": "May 27", "i": 0, "wc": 0, "dr": 0}, {"d": "May 28", "i": 0, "wc": 0, "dr": 0}, {"d": "May 29", "i": 0, "wc": 0, "dr": 0}, {"d": "May 30", "i": 0, "wc": 0, "dr": 0}, {"d": "May 31", "i": 0, "wc": 0, "dr": 0}];
+const SEO_C=[{"q": "blue moon wellness spa", "imp": 126, "cl": 73, "pos": 1.86}, {"q": "blue moon spa", "imp": 43, "cl": 14, "pos": 3.09}, {"q": "day spa camden", "imp": 105, "cl": 12, "pos": 2.9}, {"q": "pregnancy massage camden", "imp": 30, "cl": 10, "pos": 1.8}, {"q": "camden spa", "imp": 55, "cl": 8, "pos": 2.65}, {"q": "blue moon wellness", "imp": 15, "cl": 7, "pos": 6.2}, {"q": "blue moon camden", "imp": 11, "cl": 6, "pos": 3}, {"q": "bluemoon wellness", "imp": 10, "cl": 6, "pos": 1.3}, {"q": "facial camden", "imp": 80, "cl": 6, "pos": 3.56}, {"q": "day spa near me", "imp": 66, "cl": 5, "pos": 9.41}, {"q": "blue moon massage", "imp": 106, "cl": 4, "pos": 11.79}, {"q": "blue moon beauty", "imp": 9, "cl": 3, "pos": 1.44}, {"q": "camden day spa", "imp": 38, "cl": 3, "pos": 3.92}, {"q": "spa camden", "imp": 51, "cl": 3, "pos": 4}, {"q": "bluemoon", "imp": 9, "cl": 2, "pos": 5.22}, {"q": "camden massage", "imp": 186, "cl": 2, "pos": 8.35}, {"q": "face spa near me", "imp": 2, "cl": 2, "pos": 2}, {"q": "facial near me", "imp": 71, "cl": 2, "pos": 8.39}, {"q": "facials camden", "imp": 61, "cl": 2, "pos": 3.13}, {"q": "massage camden", "imp": 103, "cl": 2, "pos": 9.5}];
+const SEO_O=[];
+const pal=[C.green,C.moon,C.blue,'rgba(122,157,196,0.5)',C.amber,C.rose,'rgba(200,184,162,0.35)'];
+new Chart(document.getElementById('trafficChart'),{type:'bar',data:{labels:GA4.map(r=>r.s),datasets:[{data:GA4.map(r=>r.n),backgroundColor:pal,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{...bs,x:{...bs.x,ticks:{...bs.x.ticks,maxRotation:20,font:{size:9}}}}}});
+document.getElementById('trafficLegend').innerHTML=GA4.map((r,i)=>`<span><span class="swatch" style="background:${pal[i]}"></span>${r.s}</span>`).join('');
+new Chart(document.getElementById('igReachChart'),{type:'line',data:{labels:IG.map(d=>d.d),datasets:[{data:IG.map(d=>d.r),borderColor:C.rose,backgroundColor:'rgba(196,122,122,0.1)',fill:true,tension:0.35,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:bs}});
+const igT={REEL:'tag-rose',IMAGE:'tag-blue',CAROUSEL:'tag-amber'};
+document.getElementById('igPostsGrid').innerHTML=IG_POSTS.map(p=>`<div class="post-card"><div class="post-meta"><span style="font-size:11px;color:var(--muted)">${p.date}</span><span class="tag ${igT[p.type]||'tag-blue'}">${p.type}</span></div><div class="post-caption">${p.caption}</div><div class="post-stats"><span>❤ <strong>${p.likes}</strong></span><span>💬 <strong>${p.comments}</strong></span></div><a href="${p.url}" target="_blank">View on Instagram →</a></div>`).join('');
+document.getElementById('fb-react').textContent=FB_POSTS.reduce((s,r)=>s+r.react,0);
+document.getElementById('fb-shares').textContent=FB_POSTS.reduce((s,r)=>s+r.shares,0);
+new Chart(document.getElementById('fbChart'),{type:'bar',data:{labels:FB_DAILY.map(d=>d.d),datasets:[{data:FB_DAILY.map(d=>d.v),backgroundColor:C.blue,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{...bs,y:{...bs.y,ticks:{...bs.y.ticks,callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v}}}}});
+const fbT={photo:'tag-blue',video:'tag-rose',album:'tag-amber'};
+document.getElementById('fbPostsGrid').innerHTML=FB_POSTS.map(p=>`<div class="post-card"><div class="post-meta"><span style="font-size:11px;color:var(--muted)">${p.date}</span><span class="tag ${fbT[p.type]||'tag-blue'}">${p.type}</span></div><div class="post-caption">${p.caption}</div><div class="post-stats"><span>👁 <strong>${p.imp.toLocaleString()}</strong></span><span>❤ <strong>${p.react}</strong></span><span>↗ <strong>${p.shares}</strong></span></div><a href="${p.url}" target="_blank">View on Facebook →</a></div>`).join('');
+new Chart(document.getElementById('gmbChart'),{type:'line',data:{labels:GMB.map(d=>d.d),datasets:[{data:GMB.map(d=>d.i),borderColor:C.moon,backgroundColor:'rgba(200,184,162,0.08)',fill:true,tension:0.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:bs}});
+new Chart(document.getElementById('gmbActionsChart'),{type:'bar',data:{labels:GMB.map(d=>d.d),datasets:[{label:'Website clicks',data:GMB.map(d=>d.wc),backgroundColor:C.blue,borderRadius:2},{label:'Directions',data:GMB.map(d=>d.dr),backgroundColor:C.amber,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:C.txt,font:{size:10},boxWidth:10,padding:12}}},scales:bs}});
+document.getElementById('seoBody').innerHTML=SEO_C.map(r=>{const[cls,lbl]=r.pos<=3?['green','top 3']:r.pos<=7?['amber','close']:['rose','needs work'];return`<tr><td style="color:var(--text)">${r.q}</td><td style="text-align:right;color:var(--muted)">${r.imp}</td><td style="text-align:right;font-weight:500;color:${r.cl>0?C.green:'var(--muted)'} ">${r.cl}</td><td style="text-align:right;color:var(--muted)">${r.pos.toFixed(1)}</td><td><span class="tag tag-${cls}">${lbl}</span></td></tr>`;}).join('');
+document.getElementById('oppBody').innerHTML=SEO_O.map(r=>{const cls=r.pos<=7?'amber':'rose';return`<tr><td style="color:var(--text)">${r.q}</td><td style="text-align:right;color:var(--muted)">${r.imp}</td><td style="text-align:right;color:var(--muted)">${r.pos.toFixed(1)}</td><td><span class="tag tag-${cls}">${r.label}</span></td></tr>`;}).join('');
+</script>
+</body>
+</html>
