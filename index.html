@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue Moon Wellness Spa — Marketing Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--moon:#C8B8A2;--deep:#1A1714;--card:#272320;--border:rgba(200,184,162,0.13);--text:#EDE8E2;--muted:rgba(237,232,226,0.45);--green:#7FAF8A;--amber:#C4924A;--rose:#C47A7A;--blue:#7A9DC4;--purple:#9B8FC4;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--deep);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;padding:2rem;}
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:.5px solid var(--border);}
+.brand h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:1.9rem;letter-spacing:.04em;color:var(--moon);}
+.brand p{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.08em;text-transform:uppercase;}
+.updated{font-size:11px;color:var(--muted);text-align:right;line-height:1.6;}
+.updated strong{color:var(--moon);display:block;font-size:13px;font-weight:500;}
+.tabs{display:flex;gap:4px;margin-bottom:1.5rem;flex-wrap:wrap;}
+.tab{background:none;border:.5px solid var(--border);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;padding:6px 14px;border-radius:20px;cursor:pointer;transition:all .2s;}
+.tab.active{background:var(--moon);border-color:var(--moon);color:var(--deep);font-weight:500;}
+.panel{display:none;}.panel.active{display:block;}
+.section-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;margin-top:1.75rem;}
+.section-label:first-child{margin-top:0;}
+.insight-block{background:var(--card);border:.5px solid var(--border);border-left:2px solid var(--moon);border-radius:10px;padding:1.1rem 1.4rem;font-size:13px;line-height:1.7;color:var(--text);}
+.insight-block ul{list-style:none;padding:0;margin:0;}
+.insight-block li{padding:.45rem 0;border-bottom:.5px solid rgba(200,184,162,0.06);}
+.insight-block li:last-child{border-bottom:none;}
+.insight-block li::before{content:"🌙";margin-right:.5rem;opacity:.6;}
+.insight-block strong{color:var(--moon);font-weight:500;}
+.insight-block p{margin:.4rem 0;color:rgba(237,232,226,.85);}
+.insight-block .muted{color:var(--muted);font-style:italic;}
+.metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+.metric-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:1rem 1.1rem;}
+.lbl{font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;}
+.val{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:var(--moon);line-height:1;}
+.sub{font-size:10px;color:var(--muted);margin-top:5px;}
+.delta{font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:500;vertical-align:middle;}
+.up{background:rgba(127,175,138,0.15);color:var(--green);}
+.dn{background:rgba(196,122,122,0.15);color:var(--rose);}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:.75rem;}
+@media(max-width:680px){.charts-grid{grid-template-columns:1fr;}}
+.chart-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:1.1rem;}
+.chart-card.wide{grid-column:1/-1;}
+.chart-title{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.9rem;}
+.chart-wrap{position:relative;width:100%;height:190px;}
+.chart-wrap.tall{height:230px;}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11px;color:var(--muted);}
+.legend span{display:flex;align-items:center;gap:5px;}
+.swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+.seo-wrap{background:var(--card);border:.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:.75rem;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead th{text-align:left;color:var(--muted);font-weight:400;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;border-bottom:.5px solid var(--border);}
+tbody td{padding:8px 12px;border-bottom:.5px solid rgba(200,184,162,0.05);}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(200,184,162,0.03);}
+.tag{display:inline-block;font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;}
+.tag-green{background:rgba(127,175,138,0.15);color:var(--green);border:.5px solid rgba(127,175,138,0.3);}
+.tag-amber{background:rgba(196,146,74,0.15);color:var(--amber);border:.5px solid rgba(196,146,74,0.3);}
+.tag-rose{background:rgba(196,122,122,0.15);color:var(--rose);border:.5px solid rgba(196,122,122,0.3);}
+.tag-blue{background:rgba(122,157,196,0.15);color:var(--blue);border:.5px solid rgba(122,157,196,0.3);}
+.posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:.75rem;}
+.post-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:.9rem 1.1rem;display:flex;flex-direction:column;gap:6px;}
+.post-meta{display:flex;align-items:center;justify-content:space-between;}
+.post-caption{font-size:11px;color:var(--muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.post-stats{display:flex;gap:12px;font-size:11px;color:var(--muted);}
+.post-stats strong{color:var(--text);}
+.post-card a{font-size:10px;color:var(--moon);text-decoration:none;}
+footer{margin-top:2.5rem;padding-top:1.2rem;border-top:.5px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--muted);}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Blue Moon Wellness Spa</h1><p>Marketing performance dashboard · Camden NSW</p></div>
+  <div class="updated"><strong>Last 30 days</strong>Refreshed Sep 25</div>
+</header>
+<div class="tabs">
+  <button class="tab active" onclick="showTab('overview',this)">Overview</button>
+  <button class="tab" onclick="showTab('website',this)">Website</button>
+  <button class="tab" onclick="showTab('instagram',this)">Instagram</button>
+  <button class="tab" onclick="showTab('facebook',this)">Facebook</button>
+  <button class="tab" onclick="showTab('google',this)">Google</button>
+  <button class="tab" onclick="showTab('seo',this)">Search rankings</button>
+</div>
+
+<div class="panel active" id="panel-overview">
+  <div class="section-label">All channels at a glance</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Website sessions</div><div class="val">1,217</div><div class="sub">All sources · 30 days</div></div>
+    <div class="metric-card"><div class="lbl">Bookings started</div><div class="val">0</div><div class="sub">begin_checkout · 30 days</div></div>
+    <div class="metric-card"><div class="lbl">Bookings completed</div><div class="val">0</div><div class="sub">0% drop-off (0 started)</div></div>
+    <div class="metric-card"><div class="lbl">IG total reach</div><div class="val">155,740</div><div class="sub">30 days</div></div>
+    <div class="metric-card"><div class="lbl">IG followers</div><div class="val">1,393</div><div class="sub">🌙 Milestone reached!</div></div>
+    <div class="metric-card"><div class="lbl">GBP impressions</div><div class="val">0</div><div class="sub">Google Search &amp; Maps</div></div>
+    <div class="metric-card"><div class="lbl">GBP direction requests</div><div class="val">0</div><div class="sub">People navigating to you</div></div>
+  </div>
+
+  
+  <div class="section-label">What this is telling us 🌙</div>
+  <div class="insight-block"><ul>
+<li><strong>Instagram is actually working:</strong> 155,740 reach last month with the boundary-setting reel (Sep 13) and the phones-away session post (Sep 23) both hitting 33+ likes and real comments. People are responding to the honest, personal stuff.</li>
+<li><strong>1,217 people visited the website and zero started a booking:</strong> Something's broken or unclear on the booking page itself. They're finding you — 92 people searched your exact name — but they're not clicking through to book.</li>
+<li><strong>Facebook is completely silent:</strong> Zero impressions means either nothing was posted or the posts never showed to anyone. It's doing nothing right now.</li>
+</ul></div>
+
+  <div class="section-label">Try this next week 🌙</div>
+  <div class="insight-block"><ul>
+<li><strong>Check the booking page on mobile:</strong> Of those 1,217 sessions, most were probably on phones. Open it yourself and try to start a booking — see where it gets confusing or stops working.</li>
+<li><strong>Post the boundary reel to Facebook:</strong> It got 35 likes and 6 comments on Instagram. Facebook's been dead (0 impressions) but that content clearly lands with people.</li>
+<li><strong>Make one more post like Sep 23:</strong> The no-plan, phones-away session post matched your best numbers (33 likes, 6 comments). That unpolished, real moment is what's connecting right now.</li>
+</ul></div>
+
+</div>
+
+<div class="panel" id="panel-website">
+  <div class="section-label">Traffic</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Total sessions</div><div class="val">1,217</div><div class="sub">All sources</div></div>
+    <div class="metric-card"><div class="lbl">Bookings started</div><div class="val">0</div><div class="sub">begin_checkout · 30 days</div></div>
+    <div class="metric-card"><div class="lbl">Bookings completed</div><div class="val">0</div><div class="sub">0% drop-off (0 started)</div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card wide"><div class="chart-title">Sessions by source</div><div class="chart-wrap"><canvas id="trafficChart"></canvas></div><div class="legend" id="trafficLegend"></div></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-instagram">
+  <div class="section-label">Profile</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Followers</div><div class="val">1,393</div><div class="sub">🌙 Milestone reached!</div></div>
+    <div class="metric-card"><div class="lbl">Total reach</div><div class="val">155,740</div><div class="sub">30 days</div></div>
+    <div class="metric-card"><div class="lbl">Total likes</div><div class="val">309</div></div>
+    <div class="metric-card"><div class="lbl">Best day</div><div class="val" style="font-size:1.1rem;padding-top:5px">Aug 28</div><div class="sub">14,892 reach</div></div>
+  </div>
+  <div class="charts-grid"><div class="chart-card wide"><div class="chart-title">Daily reach</div><div class="chart-wrap"><canvas id="igReachChart"></canvas></div></div></div>
+  <div class="section-label">Top posts by engagement</div>
+  <div class="posts-grid" id="igPostsGrid"></div>
+</div>
+
+<div class="panel" id="panel-facebook">
+  <div class="section-label">Page performance</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Total impressions</div><div class="val">0</div><div class="sub">30 days</div></div>
+    <div class="metric-card"><div class="lbl">Total reactions</div><div class="val" id="fb-react"></div></div>
+    <div class="metric-card"><div class="lbl">Total shares</div><div class="val" id="fb-shares"></div></div>
+    <div class="metric-card"><div class="lbl">Top post</div><div class="val" style="font-size:1rem;padding-top:5px">—…</div><div class="sub">0 impressions · —</div></div>
+  </div>
+  <div class="charts-grid"><div class="chart-card wide"><div class="chart-title">Daily organic impressions</div><div class="chart-wrap tall"><canvas id="fbChart"></canvas></div></div></div>
+  <div class="section-label">Top posts by impressions</div>
+  <div class="posts-grid" id="fbPostsGrid"></div>
+</div>
+
+<div class="panel" id="panel-google">
+  <div class="section-label">Google My Business</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="lbl">Total impressions</div><div class="val">0</div><div class="sub">Search &amp; Maps</div></div>
+    <div class="metric-card"><div class="lbl">Website clicks</div><div class="val">0</div></div>
+    <div class="metric-card"><div class="lbl">Direction requests</div><div class="val">0</div></div>
+    <div class="metric-card"><div class="lbl">Best day</div><div class="val" style="font-size:1.1rem;padding-top:5px">—</div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">GBP impressions — daily</div><div class="chart-wrap"><canvas id="gmbChart"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Website clicks &amp; directions</div><div class="chart-wrap"><canvas id="gmbActionsChart"></canvas></div></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-seo">
+  <div class="section-label">Search rankings — terms with clicks</div>
+  <div class="seo-wrap"><table><thead><tr><th>Search term</th><th style="text-align:right">Impr.</th><th style="text-align:right">Clicks</th><th style="text-align:right">Position</th><th>Status</th></tr></thead><tbody id="seoBody"></tbody></table></div>
+  <div class="section-label">Opportunity terms — 0 clicks</div>
+  <div class="seo-wrap"><table><thead><tr><th>Search term</th><th style="text-align:right">Impr.</th><th style="text-align:right">Position</th><th>Action</th></tr></thead><tbody id="oppBody"></tbody></table></div>
+</div>
+
+<footer><span>Blue Moon Wellness Spa · Camden NSW</span><span>Refreshed Sep 25</span></footer>
+
+<script>
+function showTab(id,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+id).classList.add('active');el.classList.add('active');setTimeout(()=>window.dispatchEvent(new Event('resize')),50);}
+const C={moon:'#C8B8A2',green:'#7FAF8A',amber:'#C4924A',rose:'#C47A7A',blue:'#7A9DC4',grid:'rgba(200,184,162,0.07)',txt:'rgba(237,232,226,0.38)'};
+const bs={x:{ticks:{color:C.txt,font:{size:10},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:C.txt,font:{size:10}},grid:{color:C.grid}}};
+const GA4=[{"s": "google / organic", "n": 416}, {"s": "(direct) / (none)", "n": 396}, {"s": "ig / social", "n": 194}, {"s": "facebook.com / referral", "n": 80}, {"s": "m.facebook.com / referral", "n": 43}, {"s": "(not set) / (not set)", "n": 16}, {"s": "l.instagram.com / referral", "n": 14}];
+const IG=[{"d": "Aug 26", "r": 0}, {"d": "Aug 27", "r": 11320}, {"d": "Aug 28", "r": 14892}, {"d": "Aug 29", "r": 9373}, {"d": "Aug 30", "r": 11849}, {"d": "Aug 31", "r": 12704}, {"d": "Sep 1", "r": 7646}, {"d": "Sep 2", "r": 9186}, {"d": "Sep 3", "r": 8318}, {"d": "Sep 4", "r": 7824}, {"d": "Sep 5", "r": 6169}, {"d": "Sep 6", "r": 4196}, {"d": "Sep 7", "r": 3221}, {"d": "Sep 8", "r": 3961}, {"d": "Sep 9", "r": 5026}, {"d": "Sep 10", "r": 3880}, {"d": "Sep 11", "r": 5362}, {"d": "Sep 12", "r": 3334}, {"d": "Sep 13", "r": 4017}, {"d": "Sep 14", "r": 3499}, {"d": "Sep 15", "r": 2322}, {"d": "Sep 16", "r": 1964}, {"d": "Sep 17", "r": 5195}, {"d": "Sep 18", "r": 2178}, {"d": "Sep 19", "r": 1543}, {"d": "Sep 20", "r": 1980}, {"d": "Sep 21", "r": 1161}, {"d": "Sep 22", "r": 995}, {"d": "Sep 23", "r": 1330}, {"d": "Sep 24", "r": 1295}, {"d": "Sep 25", "r": 0}];
+const IG_POSTS=[{"date": "Sep 13", "type": "REEL", "likes": 35, "comments": 6, "caption": "Nobody warns you that some people liked you better before you had boundaries.\n\nYou do the work. You get steadier and somewhere in there a person you love starts\ndescribing you as cold.\n\nYou stop over-explaining, and it g", "url": "https://www.instagram.com/reel/DdOS1J8zhJ5/"}, {"date": "Sep 23", "type": "REEL", "likes": 33, "comments": 6, "caption": "There was no plan to film nor create content. \nPhones away, as with all our sessions. \nJust seventy-five minutes that were hers.\nHalfway through, Courtney stopped me.\nShe wanted to remember it.\n\nI don\u2019t usually share rev", "url": "https://www.instagram.com/reel/DdoECrBToeI/"}, {"date": "Sep 15", "type": "CAROUSEL_ALBUM", "likes": 33, "comments": 6, "caption": "Deciding to stop speaking to my dad was one day.\n\nKeeping that decision is every day since.\n\nThe decision is the part people can see. Not everybody claps for what comes after, and after is where it actually gets hard. Th", "url": "https://www.instagram.com/p/DdTckQ-GkCO/"}, {"date": "Sep 11", "type": "REEL", "likes": 29, "comments": 1, "caption": "I turn the bed down before every single one. \nSame way every time. \n\nCorner first, then the fold, then the blanket pulled square so the whole thing sits flat. \n\nNobody sees me do it. It happens minutes before she arrives", "url": "https://www.instagram.com/reel/DdJIYg2TFUP/"}, {"date": "Sep 4", "type": "REEL", "likes": 25, "comments": 0, "caption": "I tell myself I need to improve more.\nThat I need to do better at my business. \nThen three-year-old me shows up asking the real question:\n\u201cWait... we have a business?\u201d\n\nI\u2019m proud of how far I\u2019ve come \ud83d\udc99 \n\nhttp://www.bluem", "url": "https://www.instagram.com/reel/Dc3HD80pW10/"}, {"date": "Sep 7", "type": "CAROUSEL_ALBUM", "likes": 15, "comments": 2, "caption": "For some of us, silence isn\u2019t calm. It\u2019s the loudest room in the house.\n\nIf you grew up needing to hear what was coming, quiet doesn\u2019t feel like safety. It feels\nlike waiting.\n\nYou know it if you need a podcast just to f", "url": "https://www.instagram.com/p/Dc-2aBsE1hz/"}];
+const FB_POSTS=[];
+const FB_DAILY=[{"d": "Aug 26", "v": 0}, {"d": "Aug 27", "v": 0}, {"d": "Aug 28", "v": 0}, {"d": "Aug 29", "v": 0}, {"d": "Aug 30", "v": 0}, {"d": "Aug 31", "v": 0}, {"d": "Sep 1", "v": 0}, {"d": "Sep 2", "v": 0}, {"d": "Sep 3", "v": 0}, {"d": "Sep 4", "v": 0}, {"d": "Sep 5", "v": 0}, {"d": "Sep 6", "v": 0}, {"d": "Sep 7", "v": 0}, {"d": "Sep 8", "v": 0}, {"d": "Sep 9", "v": 0}, {"d": "Sep 10", "v": 0}, {"d": "Sep 11", "v": 0}, {"d": "Sep 12", "v": 0}, {"d": "Sep 13", "v": 0}, {"d": "Sep 14", "v": 0}, {"d": "Sep 15", "v": 0}, {"d": "Sep 16", "v": 0}, {"d": "Sep 17", "v": 0}, {"d": "Sep 18", "v": 0}, {"d": "Sep 19", "v": 0}, {"d": "Sep 20", "v": 0}, {"d": "Sep 21", "v": 0}, {"d": "Sep 22", "v": 0}, {"d": "Sep 23", "v": 0}, {"d": "Sep 24", "v": 0}, {"d": "Sep 25", "v": 0}];
+const GMB=[{"d": "Aug 26", "i": 0, "wc": 0, "dr": 0}, {"d": "Aug 27", "i": 0, "wc": 0, "dr": 0}, {"d": "Aug 28", "i": 0, "wc": 0, "dr": 0}, {"d": "Aug 29", "i": 0, "wc": 0, "dr": 0}, {"d": "Aug 30", "i": 0, "wc": 0, "dr": 0}, {"d": "Aug 31", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 1", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 2", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 3", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 4", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 5", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 6", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 7", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 8", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 9", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 10", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 11", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 12", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 13", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 14", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 15", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 16", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 17", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 18", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 19", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 20", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 21", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 22", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 23", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 24", "i": 0, "wc": 0, "dr": 0}, {"d": "Sep 25", "i": 0, "wc": 0, "dr": 0}];
+const SEO_C=[{"q": "blue moon wellness spa", "imp": 118, "cl": 55, "pos": 2.58}, {"q": "blue moon spa", "imp": 30, "cl": 10, "pos": 4.57}, {"q": "bluemoon wellness spa", "imp": 20, "cl": 10, "pos": 4.5}, {"q": "bluemoon wellness", "imp": 12, "cl": 9, "pos": 1.17}, {"q": "blue moon wellness", "imp": 20, "cl": 8, "pos": 6.95}, {"q": "blue moon camden", "imp": 12, "cl": 6, "pos": 2.67}, {"q": "pregnancy massage camden", "imp": 20, "cl": 6, "pos": 2}, {"q": "blue moon massage", "imp": 68, "cl": 4, "pos": 7.91}, {"q": "day spa camden", "imp": 78, "cl": 4, "pos": 6.77}, {"q": "day spa near me", "imp": 34, "cl": 4, "pos": 9.18}, {"q": "massage near me", "imp": 484, "cl": 4, "pos": 11.66}, {"q": "massage camden", "imp": 162, "cl": 3, "pos": 13.91}, {"q": "blue moon", "imp": 11, "cl": 2, "pos": 5.09}, {"q": "blue moon beauty", "imp": 5, "cl": 2, "pos": 1}, {"q": "camden massage", "imp": 227, "cl": 2, "pos": 12.26}, {"q": "facials camden", "imp": 13, "cl": 2, "pos": 3.31}, {"q": "full body massage camden", "imp": 18, "cl": 2, "pos": 3.72}, {"q": "massage camden nsw", "imp": 49, "cl": 2, "pos": 9.69}, {"q": "massage places near me", "imp": 22, "cl": 2, "pos": 11.27}, {"q": "spa camden", "imp": 27, "cl": 2, "pos": 3.48}];
+const SEO_O=[];
+const pal=[C.green,C.moon,C.blue,'rgba(122,157,196,0.5)',C.amber,C.rose,'rgba(200,184,162,0.35)'];
+new Chart(document.getElementById('trafficChart'),{type:'bar',data:{labels:GA4.map(r=>r.s),datasets:[{data:GA4.map(r=>r.n),backgroundColor:pal,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{...bs,x:{...bs.x,ticks:{...bs.x.ticks,maxRotation:20,font:{size:9}}}}}});
+document.getElementById('trafficLegend').innerHTML=GA4.map((r,i)=>`<span><span class="swatch" style="background:${pal[i]}"></span>${r.s}</span>`).join('');
+new Chart(document.getElementById('igReachChart'),{type:'line',data:{labels:IG.map(d=>d.d),datasets:[{data:IG.map(d=>d.r),borderColor:C.rose,backgroundColor:'rgba(196,122,122,0.1)',fill:true,tension:0.35,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:bs}});
+const igT={REEL:'tag-rose',IMAGE:'tag-blue',CAROUSEL:'tag-amber'};
+document.getElementById('igPostsGrid').innerHTML=IG_POSTS.map(p=>`<div class="post-card"><div class="post-meta"><span style="font-size:11px;color:var(--muted)">${p.date}</span><span class="tag ${igT[p.type]||'tag-blue'}">${p.type}</span></div><div class="post-caption">${p.caption}</div><div class="post-stats"><span>❤ <strong>${p.likes}</strong></span><span>💬 <strong>${p.comments}</strong></span></div><a href="${p.url}" target="_blank">View on Instagram →</a></div>`).join('');
+document.getElementById('fb-react').textContent=FB_POSTS.reduce((s,r)=>s+r.react,0);
+document.getElementById('fb-shares').textContent=FB_POSTS.reduce((s,r)=>s+r.shares,0);
+new Chart(document.getElementById('fbChart'),{type:'bar',data:{labels:FB_DAILY.map(d=>d.d),datasets:[{data:FB_DAILY.map(d=>d.v),backgroundColor:C.blue,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{...bs,y:{...bs.y,ticks:{...bs.y.ticks,callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v}}}}});
+const fbT={photo:'tag-blue',video:'tag-rose',album:'tag-amber'};
+document.getElementById('fbPostsGrid').innerHTML=FB_POSTS.map(p=>`<div class="post-card"><div class="post-meta"><span style="font-size:11px;color:var(--muted)">${p.date}</span><span class="tag ${fbT[p.type]||'tag-blue'}">${p.type}</span></div><div class="post-caption">${p.caption}</div><div class="post-stats"><span>👁 <strong>${p.imp.toLocaleString()}</strong></span><span>❤ <strong>${p.react}</strong></span><span>↗ <strong>${p.shares}</strong></span></div><a href="${p.url}" target="_blank">View on Facebook →</a></div>`).join('');
+new Chart(document.getElementById('gmbChart'),{type:'line',data:{labels:GMB.map(d=>d.d),datasets:[{data:GMB.map(d=>d.i),borderColor:C.moon,backgroundColor:'rgba(200,184,162,0.08)',fill:true,tension:0.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:bs}});
+new Chart(document.getElementById('gmbActionsChart'),{type:'bar',data:{labels:GMB.map(d=>d.d),datasets:[{label:'Website clicks',data:GMB.map(d=>d.wc),backgroundColor:C.blue,borderRadius:2},{label:'Directions',data:GMB.map(d=>d.dr),backgroundColor:C.amber,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:C.txt,font:{size:10},boxWidth:10,padding:12}}},scales:bs}});
+document.getElementById('seoBody').innerHTML=SEO_C.map(r=>{const[cls,lbl]=r.pos<=3?['green','top 3']:r.pos<=7?['amber','close']:['rose','needs work'];return`<tr><td style="color:var(--text)">${r.q}</td><td style="text-align:right;color:var(--muted)">${r.imp}</td><td style="text-align:right;font-weight:500;color:${r.cl>0?C.green:'var(--muted)'} ">${r.cl}</td><td style="text-align:right;color:var(--muted)">${r.pos.toFixed(1)}</td><td><span class="tag tag-${cls}">${lbl}</span></td></tr>`;}).join('');
+document.getElementById('oppBody').innerHTML=SEO_O.map(r=>{const cls=r.pos<=7?'amber':'rose';return`<tr><td style="color:var(--text)">${r.q}</td><td style="text-align:right;color:var(--muted)">${r.imp}</td><td style="text-align:right;color:var(--muted)">${r.pos.toFixed(1)}</td><td><span class="tag tag-${cls}">${r.label}</span></td></tr>`;}).join('');
+</script>
+</body>
+</html>
